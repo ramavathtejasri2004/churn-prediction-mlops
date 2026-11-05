@@ -17,9 +17,29 @@ DATA_LOAD_REPORT = Path("artifacts/data_load_report.json")
 
 
 def run_drift_analysis():
-    print("[INFO] Running drift analysis...")
-    result = subprocess.run([sys.executable, str(DRIFT_SCRIPT)])
-    return result.returncode == 0
+    drift_scripts = [
+        Path("src/mlops_pipeline/12_data_drift.py"),
+        Path("src/mlops_pipeline/12_prediction_drift.py"),
+        Path("src/mlops_pipeline/12_concept_drift.py"),
+        DRIFT_SCRIPT
+    ]
+
+    for script in drift_scripts:
+        print(f"\n[INFO] Running {script.name}...")
+
+        if not script.exists():
+            print(f"[ERROR] Script not found: {script}")
+            return False
+
+        result = subprocess.run([sys.executable, str(script)])
+
+        if result.returncode != 0:
+            print(f"[ERROR] {script.name} failed.")
+            return False
+
+        print(f"[SUCCESS] {script.name} completed.")
+
+    return True
 
 
 def detect_drift():
