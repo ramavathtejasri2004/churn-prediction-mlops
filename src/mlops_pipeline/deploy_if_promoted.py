@@ -1,8 +1,8 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LIFECYCLE_REPORT = PROJECT_ROOT / "reports" / "lifecycle_report.json"
@@ -29,7 +29,6 @@ def main():
     print("=" * 70)
 
     report = load_lifecycle_report()
-
     promoted = report.get("promoted", False)
     candidate_version = report.get("candidate_version")
     production_version = report.get("production_version_after")
@@ -50,7 +49,18 @@ def main():
         return False
 
     print("[SUCCESS] Deployment artifacts prepared.")
+
+    if os.environ.get("GITHUB_ACTIONS", "").lower() == "true":
+        print("[INFO] GitHub Actions environment detected.")
+        print("[INFO] Actual Docker/Kubernetes deployment skipped.")
+        print("[SUCCESS] Deployment preparation completed for CI.")
+        return True
+
     print("[INFO] Starting Production deployment...")
+
+    if not DEPLOY_SCRIPT.exists():
+        print(f"[ERROR] Deployment script not found: {DEPLOY_SCRIPT}")
+        return False
 
     if not run_script(DEPLOY_SCRIPT):
         print("[ERROR] Production deployment failed.")
