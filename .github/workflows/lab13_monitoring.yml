@@ -11,20 +11,29 @@ jobs:
   mlops-monitoring:
     runs-on: [self-hosted, Windows, X64]
 
+    env:
+      PYTHON_EXE: 'C:\Users\tejas\Downloads\churn-prediction-reconstructed\.venv\Scripts\python.exe'
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - name: Verify Python
+        shell: powershell
+        run: |
+          & $env:PYTHON_EXE --version
+          if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+          }
 
       - name: Install API dependencies
         shell: powershell
         run: |
           Set-Location "$env:GITHUB_WORKSPACE"
-          python -m pip install -r requirements-api.txt
+          & $env:PYTHON_EXE -m pip install -r requirements-api.txt
+          if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+          }
 
       - name: Run MLOps monitoring trigger
         shell: powershell
@@ -32,7 +41,9 @@ jobs:
           Set-Location "$env:GITHUB_WORKSPACE"
           Write-Host "Project directory:"
           Get-Location
-          python ".\src\mlops_pipeline\12_monitor_trigger.py"
+
+          & $env:PYTHON_EXE ".\src\mlops_pipeline\12_monitor_trigger.py"
+
           if ($LASTEXITCODE -ne 0) {
               exit $LASTEXITCODE
           }
@@ -41,6 +52,7 @@ jobs:
         shell: powershell
         run: |
           Set-Location "$env:GITHUB_WORKSPACE"
+
           if (Test-Path ".\outputs\monitoring\monitor_trigger_report.json") {
               Get-Content ".\outputs\monitoring\monitor_trigger_report.json"
           } else {
