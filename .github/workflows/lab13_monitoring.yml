@@ -1,5 +1,5 @@
+
 name: Lab 13 - End-to-End MLOps
-# Integration test: process a genuinely new incoming batch
 
 on:
   workflow_dispatch:
@@ -12,20 +12,40 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install API dependencies
+        shell: powershell
+        run: |
+          Set-Location "$env:GITHUB_WORKSPACE"
+          python -m pip install -r requirements-api.txt
+
       - name: Run MLOps monitoring trigger
         shell: powershell
         run: |
-          Set-Location "C:\Users\jnane\Favorites\churn-prediction"
-          & ".\venv\Scripts\python.exe" ".\src\mlops_pipeline\12_monitor_trigger.py"
+          Set-Location "$env:GITHUB_WORKSPACE"
+          Write-Host "Project directory:"
+          Get-Location
+          python ".\src\mlops_pipeline\12_monitor_trigger.py"
+          if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+          }
 
       - name: Show monitoring result
         shell: powershell
         run: |
-          Set-Location "C:\Users\jnane\Favorites\churn-prediction"
+          Set-Location "$env:GITHUB_WORKSPACE"
           if (Test-Path ".\outputs\monitoring\monitor_trigger_report.json") {
               Get-Content ".\outputs\monitoring\monitor_trigger_report.json"
           } else {
               Write-Host "Monitoring report was not generated."
+              exit 1
           }
 
       - name: Verify Kubernetes
